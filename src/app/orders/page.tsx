@@ -15,7 +15,7 @@ export default async function Orders({
   const supabase = await createClient();
   const { data } = await supabase
     .from("orders")
-    .select("id, total, status, created_at, order_items(id, title, unit_price, quantity)")
+    .select("id, total, status, created_at, ship_name, ship_phone, ship_address, ship_city, ship_state, order_items(id, title, unit_price, quantity)")
     .order("created_at", { ascending: false });
   const orders = (data ?? []) as unknown as Order[];
 
@@ -53,6 +53,11 @@ export default async function Orders({
                   <p className="text-xs uppercase tracking-wide text-accent">{o.status}</p>
                 </div>
               </div>
+              {o.ship_address && (
+                <p className="mt-3 text-sm text-muted">
+                  Delivering to {o.ship_name}, {o.ship_address}, {o.ship_city}, {o.ship_state}
+                </p>
+              )}
               <ul className="mt-3 divide-y divide-line border-t border-line text-sm">
                 {o.order_items.map((i) => (
                   <li key={i.id} className="flex justify-between py-2">

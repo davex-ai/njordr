@@ -1,6 +1,9 @@
 import Link from "next/link";
+import CategorySlider, { type CategoryCard } from "@/components/CategorySlider";
+import HeroMosaic from "@/components/HeroMosaic";
 import ProductCard from "@/components/ProductCard";
 import { titleCase } from "@/lib/format";
+import { getHeroImages } from "@/lib/hero-images";
 import { createClient } from "@/lib/supabase/server";
 import type { Product } from "@/lib/types";
 
@@ -8,37 +11,51 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const supabase = await createClient();
-  const [{ data: featured }, { data: cats }] = await Promise.all([
+  const [{ data: featured }, { data: all }, heroImages] = await Promise.all([
     supabase.from("products").select("*").order("rating", { ascending: false }).limit(8),
-    supabase.from("products").select("category"),
+    supabase.from("products").select("category, image, rating"),
+    getHeroImages(supabase),
   ]);
-  const categories = [...new Set((cats ?? []).map((c) => c.category as string))].slice(0, 8);
+
+  // One card per category, pictured with its best-rated product.
+  const byCategory = new Map<string, CategoryCard & { best: number }>();
+  for (const p of all ?? []) {
+    const cur = byCategory.get(p.category);
+    const rating = Number(p.rating);
+    if (!cur) byCategory.set(p.category, { slug: p.category, label: titleCase(p.category), image: p.image, count: 1, best: rating });
+    else {
+      cur.count++;
+      if (rating > cur.best) Object.assign(cur, { image: p.image, best: rating });
+    }
+  }
+  const categories = [...byCategory.values()].sort((a, b) => b.count - a.count);
 
   return (
     <div className="space-y-16">
-      <section className="rounded-3xl border border-line bg-surface px-6 py-16 text-center sm:px-12 sm:py-24">
-        <p className="text-sm uppercase tracking-[0.2em] text-muted">Trade, reimagined</p>
-        <h1 className="mx-auto mt-4 max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">
-          Things worth having, <span className="text-accent">delivered.</span>
-        </h1>
-        <p className="mx-auto mt-5 max-w-xl text-muted">
-          Njörðr brings a curated range of beauty, home, tech and everyday essentials to one clean, fast storefront.
-        </p>
-        <Link href="/products" className="btn btn-primary mt-8 !px-6 !py-3">
-          Shop now
-        </Link>
+      <section className="grid items-center gap-10 overflow-hidden rounded-3xl border border-line bg-surface p-6 sm:p-12 lg:grid-cols-2">
+        <div>
+          <p className="text-sm uppercase tracking-[0.2em] text-muted">Trade, reimagined</p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+            Things worth having, <span className="text-accent">delivered.</span>
+          </h1>
+          <p className="mt-5 max-w-md text-muted">
+            Njörðr brings a curated range of beauty, home, fashion and everyday essentials to one clean, fast storefront.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/products" className="btn btn-primary !px-6 !py-3">
+              Shop now
+            </Link>
+            <a href="#categories" className="btn !px-6 !py-3">
+              Browse categories
+            </a>
+          </div>
+        </div>
+        <HeroMosaic images={heroImages} />
       </section>
 
       {categories.length > 0 && (
-        <section>
-          <h2 className="mb-4 text-xl font-semibold">Browse by category</h2>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((c) => (
-              <Link key={c} href={`/products?category=${c}`} className="btn">
-                {titleCase(c)}
-              </Link>
-            ))}
-          </div>
+        <section id="categories" className="scroll-mt-24">
+          <CategorySlider categories={categories} />
         </section>
       )}
 

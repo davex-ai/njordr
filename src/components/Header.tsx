@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CartBadge from "@/components/CartBadge";
+import Logo from "@/components/Logo";
 
 export default async function Header() {
   const supabase = await createClient();
@@ -11,8 +12,8 @@ export default async function Header() {
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="text-xl font-semibold tracking-tight text-accent">
-          Njörðr
+        <Link href="/" aria-label="Njörðr home">
+          <Logo />
         </Link>
         <nav className="flex items-center gap-5 text-sm">
           <Link href="/products" className="hover:text-accent">
@@ -22,6 +23,9 @@ export default async function Header() {
             <>
               <Link href="/orders" className="hover:text-accent">
                 Orders
+              </Link>
+              <Link href="/account" className="hover:text-accent">
+                Account
               </Link>
               <CartBadge />
               <form action="/auth/signout" method="post">

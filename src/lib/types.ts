@@ -22,5 +22,10 @@ export type Order = {
   total: number;
   status: string;
   created_at: string;
+  ship_name: string | null;
+  ship_phone: string | null;
+  ship_address: string | null;
+  ship_city: string | null;
+  ship_state: string | null;
   order_items: OrderItem[];
 };

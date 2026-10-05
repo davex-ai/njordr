@@ -26,7 +26,11 @@ export async function POST(request: Request) {
   }
 
   const [{ data: order }, { data: lines }] = await Promise.all([
-    supabase.from("orders").select("total").eq("id", orderId).single(),
+    supabase
+      .from("orders")
+      .select("total, ship_name, ship_phone, ship_address, ship_city, ship_state")
+      .eq("id", orderId)
+      .single(),
     supabase.from("order_items").select("title, unit_price, quantity").eq("order_id", orderId),
   ]);
 
@@ -38,6 +42,9 @@ export async function POST(request: Request) {
         orderId,
         lines: lines.map((l) => ({ ...l, unit_price: Number(l.unit_price) })),
         total: Number(order.total),
+        address: order.ship_address
+          ? [order.ship_name, order.ship_address, order.ship_city, order.ship_state, order.ship_phone].filter(Boolean).join(", ")
+          : undefined,
       });
     } catch (e) {
       console.error("Order email failed", e);

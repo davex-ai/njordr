@@ -5,7 +5,7 @@ type Line = { title: string; unit_price: number; quantity: number };
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-function orderHtml(orderId: string, lines: Line[], total: number) {
+function orderHtml(orderId: string, lines: Line[], total: number, address?: string) {
   const rows = lines
     .map(
       (l) => `<tr>
@@ -24,6 +24,7 @@ function orderHtml(orderId: string, lines: Line[], total: number) {
       <tr><td><table width="100%" cellpadding="0" cellspacing="0">${rows}
         <tr><td style="padding-top:16px;font-weight:600;color:#111827">Total</td><td style="padding-top:16px;text-align:right;font-weight:700;color:#111827">${formatPrice(total)}</td></tr>
       </table></td></tr>
+      ${address ? `<tr><td style="padding-top:24px;color:#111827;font-size:14px"><strong>Delivering to</strong><br><span style="color:#6b7280">${esc(address)}</span></td></tr>` : ""}
       <tr><td style="padding-top:28px;color:#6b7280;font-size:13px">You can see this order any time under Orders on Njörðr.</td></tr>
     </table>
   </td></tr></table></body></html>`;
@@ -34,6 +35,7 @@ export async function sendOrderEmail(opts: {
   orderId: string;
   lines: Line[];
   total: number;
+  address?: string;
 }): Promise<boolean> {
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.BREVO_SENDER_EMAIL;
@@ -46,7 +48,7 @@ export async function sendOrderEmail(opts: {
       sender: { name: process.env.BREVO_SENDER_NAME ?? "Njörðr", email: senderEmail },
       to: [{ email: opts.to }],
       subject: `Your Njörðr order #${opts.orderId.slice(0, 8).toUpperCase()} is confirmed`,
-      htmlContent: orderHtml(opts.orderId, opts.lines, opts.total),
+      htmlContent: orderHtml(opts.orderId, opts.lines, opts.total, opts.address),
     }),
   });
   if (!res.ok) console.error("Brevo error", res.status, await res.text());

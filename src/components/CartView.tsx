@@ -8,9 +8,12 @@ import { formatPrice } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import type { CartLine } from "@/lib/types";
 
+type Address = { full_name: string; phone: string; address_line: string; city: string; state: string };
+
 export default function CartView() {
   const router = useRouter();
   const [lines, setLines] = useState<CartLine[] | null>(null);
+  const [address, setAddress] = useState<Address | null | undefined>(undefined);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
 
@@ -20,6 +23,14 @@ export default function CartView() {
       .select("id, quantity, products(id, title, price, image, stock)")
       .order("created_at");
     setLines((data ?? []) as unknown as CartLine[]);
+  }, []);
+
+  useEffect(() => {
+    createClient()
+      .from("profiles")
+      .select("full_name, phone, address_line, city, state")
+      .maybeSingle()
+      .then(({ data }) => setAddress((data as Address | null) ?? null));
   }, []);
 
   useEffect(() => {
@@ -69,6 +80,7 @@ export default function CartView() {
       </div>
     );
 
+  const hasAddress = !!(address && address.full_name && address.phone && address.address_line && address.city && address.state);
   const total = lines.reduce((n, l) => n + l.products.price * l.quantity, 0);
 
   return (
@@ -110,8 +122,27 @@ export default function CartView() {
           <span>Total</span>
           <span>{formatPrice(total)}</span>
         </div>
+        <div className="mt-4 rounded-xl border border-line p-3 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="font-medium">Deliver to</span>
+            <Link href="/account?next=/cart" className="text-accent">
+              {hasAddress ? "Change" : "Add address"}
+            </Link>
+          </div>
+          {address === undefined ? (
+            <p className="mt-1 text-muted">Loading…</p>
+          ) : hasAddress ? (
+            <p className="mt-1 text-muted">
+              {address!.full_name}, {address!.address_line}, {address!.city}, {address!.state}
+              <br />
+              {address!.phone}
+            </p>
+          ) : (
+            <p className="mt-1 text-muted">Add a delivery address to place your order.</p>
+          )}
+        </div>
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-        <button className="btn btn-primary mt-5 w-full" onClick={placeOrder} disabled={placing}>
+        <button className="btn btn-primary mt-5 w-full" onClick={placeOrder} disabled={placing || !hasAddress}>
           {placing ? "Placing order…" : "Place order"}
         </button>
         <p className="mt-3 text-xs text-muted">Demo checkout: no payment is taken.</p>
