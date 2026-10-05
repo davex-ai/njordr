@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
-
+ 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Njörðr",
     short_name: "Njörðr",
     description: "A modern marketplace for things worth having.",
+    id: "/",
     start_url: "/",
     scope: "/",
     display: "standalone",
@@ -17,3 +18,4 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
   };
 }
+    
